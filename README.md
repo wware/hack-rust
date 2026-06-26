@@ -1,6 +1,6 @@
 # bohemia_graph
 
-A Rust graph engine over the [Bohemia NER dataset](../ner-20260608) — a typed
+A Rust graph engine over the [Bohemia NER dataset](https://github.com/graphwright/ner-20260608) — a typed
 knowledge graph extracted from "A Scandal in Bohemia" by Arthur Conan Doyle —
 with a Guile Scheme FFI interface.
 
@@ -23,9 +23,8 @@ This project is a Rust learning exercise covering:
 
 ## Data files
 
-The four JSONL files produced by the
-[ner-20260608](https://github.com/wware/ner-20260608) NER pipeline are
-bundled in this repo:
+The four JSONL files are bundled in this repo (source:
+[wware/ner-20260608](https://github.com/graphwright/ner-20260608)):
 
 ```
 bohemia_entities.jsonl   — canonical entities with wiki links and aliases
