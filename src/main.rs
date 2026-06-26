@@ -5,13 +5,11 @@ use bohemia_graph::loader::load_graph_data;
 use bohemia_graph::types::EdgeFilter;
 
 fn main() {
-    let base = Path::new("../ner-20260608");
-
     let data = load_graph_data(
-        &base.join("bohemia_entities.jsonl"),
-        &base.join("bohemia_events.jsonl"),
-        &base.join("bohemia_moments.jsonl"),
-        &base.join("bohemia_triplets.jsonl"),
+        Path::new("bohemia_entities.jsonl"),
+        Path::new("bohemia_events.jsonl"),
+        Path::new("bohemia_moments.jsonl"),
+        Path::new("bohemia_triplets.jsonl"),
         None,
     )
     .expect("failed to load data");

@@ -20,26 +20,20 @@ This project is a Rust learning exercise covering:
 
 ## Data files
 
-This project reads JSONL files produced by the
-[ner-20260608](../ner-20260608) NER pipeline — a separate project that
-extracted a typed knowledge graph from "A Scandal in Bohemia" using Claude.
-Clone or copy that repo as a sibling directory so the relative path
-`../ner-20260608/` resolves correctly:
+The four JSONL files produced by the
+[ner-20260608](https://github.com/wware/ner-20260608) NER pipeline are
+bundled in this repo:
 
 ```
-parent/
-  ner-20260608/          ← NER pipeline + generated JSONL files
-    bohemia_entities.jsonl
-    bohemia_events.jsonl
-    bohemia_moments.jsonl
-    bohemia_triplets.jsonl
-    ...
-  hack-rust/             ← this repo
+bohemia_entities.jsonl   — canonical entities with wiki links and aliases
+bohemia_events.jsonl     — narrative events with participant lists
+bohemia_moments.jsonl    — temporal anchors tied to events
+bohemia_triplets.jsonl   — typed, directed statements (the graph edges)
 ```
 
-Both `cargo run` and `guile query.scm` expect the files at that relative path.
-If your data lives elsewhere, edit the `base` path at the top of `src/main.rs`
-and `query.scm`.
+`cargo run` looks for them in the current working directory (the repo root).
+`guile query.scm` resolves them relative to the script's own directory, so it
+works regardless of where you invoke it from.
 
 ## Build instructions
 

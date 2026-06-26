@@ -128,7 +128,7 @@
 ;; Demo
 ;; ---------------------------------------------------------------------------
 
-(define base "../ner-20260608")
+(define base (dirname (current-filename)))
 
 (define G (graph-new))
 
