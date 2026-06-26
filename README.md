@@ -11,6 +11,9 @@ This project is a Rust learning exercise covering:
 - BFS, transitive closure, and filtered edge queries
 - `cdylib` shared library with C-ABI exports (`extern "C"`, `#[no_mangle]`)
 - Calling Rust from Guile Scheme via `(system foreign)`
+- Returning native Scheme values (strings, alists, lists) directly from Rust
+  by calling the Guile C API (`scm_cons`, `scm_from_utf8_string`, …) and
+  reinterpreting the result as SCM via `pointer->scm`
 
 ## Prerequisites
 
@@ -48,13 +51,16 @@ rustup target add x86_64-apple-darwin
 
 ```
 src/
-  lib.rs       — crate root; re-exports all modules
-  types.rs     — enums and structs (TruthStatus, EntityKind, Node, …)
-  loader.rs    — JSONL → Vec<Node> via serde_json
-  graph.rs     — in-memory graph with BFS / transitive closure / edge queries
-  ffi.rs       — extern "C" exports for the cdylib target
-  main.rs      — standalone CLI demo (cargo run)
-query.scm      — Guile Scheme demo that dlopen's the shared library
+  lib.rs        — crate root; re-exports all modules
+  types.rs      — enums and structs (TruthStatus, EntityKind, Node, …)
+  loader.rs     — JSONL → Vec<Node> via serde_json
+  graph.rs      — in-memory graph with BFS / transitive closure / edge queries
+  ffi.rs        — JSON-string FFI exports (char* return values)
+  ffi_scm.rs    — native SCM FFI exports (Scm/usize return values, x86_64 only)
+  guile_sys.rs  — extern "C" bindings to libguile + SCM immediate constants
+  main.rs       — standalone CLI demo (cargo run)
+build.rs        — links libguile-3.0 when targeting x86_64-apple-darwin
+query.scm       — Guile Scheme demo using the native SCM API
 ```
 
 ## Build
@@ -114,10 +120,29 @@ Build the x86_64 release first, then:
 guile query.scm
 ```
 
-The script loads the graph through the FFI and prints the same queries as the
-Rust CLI, but driven entirely from Scheme. Results come back as JSON strings
-that Scheme can parse with `(json->scm ...)` from the `(json)` module if
-further processing is needed.
+The script uses the native SCM API (`graph_*_scm` exports).  Results are real
+Scheme values — no JSON parsing required:
+
+```scheme
+;; describe → native string
+(string? (graph-describe G "wiki:Sherlock_Holmes"))  ; ⇒ #t
+
+;; edges-from → list of alists; use assq-ref directly
+(let ((edges (graph-edges-from G "wiki:Sherlock_Holmes")))
+  (for-each (lambda (e)
+              (format #t "~a -> ~a~%"
+                      (assq-ref e 'predicate)
+                      (assq-ref e 'object-id)))
+            edges))
+
+;; bfs → list of layers, each a list of ID strings
+(let ((layers (graph-bfs G '("wiki:Sherlock_Holmes") 2)))
+  (format #t "layer 1 has ~a nodes~%" (length (cadr layers))))
+
+;; node → full alist
+(assq-ref (graph-node G "wiki:Irene_Adler") 'aliases)
+;; ⇒ ("Irene Adler" "Mademoiselle Irene Adler" …)
+```
 
 ## Graph model
 
@@ -139,23 +164,28 @@ canonicalized to `wiki:<slug>` on lookup.
 
 ## FFI API
 
-The shared library exports these C-compatible functions.  All string arguments
-and return values are null-terminated UTF-8.  Returned strings must be freed
-with `graph_free_str`.
+The library exports two families of functions.
+
+### Lifecycle (shared by both families)
 
 ```c
-// Lifecycle
 OpaqueGraph* graph_new();
 int          graph_load(OpaqueGraph*, const char* entities, const char* events,
                         const char* moments, const char* triplets,
                         int sentence_cutoff);   // cutoff < 0 = no cutoff
 void         graph_destroy(OpaqueGraph*);
-void         graph_free_str(char*);
+int          graph_node_count(const OpaqueGraph*);
+```
 
-// Queries — return JSON strings
-int   graph_node_count(const OpaqueGraph*);
-char* graph_get(const OpaqueGraph*, const char* id);           // JSON object or NULL
-char* graph_describe(const OpaqueGraph*, const char* id);      // human-readable string
+### JSON family (`ffi.rs`) — return `char*`
+
+All returned strings are null-terminated UTF-8 heap allocations; the caller
+must free them with `graph_free_str`.
+
+```c
+void  graph_free_str(char*);
+char* graph_get(const OpaqueGraph*, const char* id);
+char* graph_describe(const OpaqueGraph*, const char* id);
 char* graph_edges_from(const OpaqueGraph*, const char* id,
                        const char* pred_type,   // NULL = any
                        const char* truth);       // NULL = any; e.g. "asserted_true"
@@ -166,6 +196,42 @@ char* graph_bfs(const OpaqueGraph*,
                 int max_hops,
                 const char* truth_json); // JSON array of truth values, or NULL
 char* graph_transitive_closure(const OpaqueGraph*,
-                               const char* start,
-                               const char* predicate);
+                               const char* start, const char* predicate);
 ```
+
+### SCM family (`ffi_scm.rs`) — return native Scheme values
+
+Available on x86_64 only (where libguile is linked).  Return type is `SCM`
+(`uintptr_t`), which Guile reinterprets via `pointer->scm`.  No allocation to
+free — values are owned by the Guile GC once returned.
+
+Entities come back as alists with symbol keys:
+`node-kind`, `id`, `display-name`, `kind`, `wiki-url`, `aliases`.
+
+Statements come back as alists with symbol keys:
+`id`, `predicate`, `subject-id`, `object-id`, `truth-status`, `story-id`,
+`paragraph-index`, `sentence-ids`, `extraction-confidence`,
+`asserting-narrator-id`.
+
+```c
+SCM graph_describe_scm(const OpaqueGraph*, const char* id);
+SCM graph_node_scm(const OpaqueGraph*, const char* id);
+SCM graph_edges_from_scm(const OpaqueGraph*, const char* id,
+                         const char* pred_type, const char* truth);
+SCM graph_edges_to_scm(const OpaqueGraph*, const char* id,
+                       const char* pred_type, const char* truth);
+SCM graph_bfs_scm(const OpaqueGraph*,
+                  const char* seeds_json, int max_hops,
+                  const char* truth_json);
+SCM graph_transitive_closure_scm(const OpaqueGraph*,
+                                 const char* start, const char* predicate);
+SCM graph_all_ids_scm(const OpaqueGraph*);
+SCM graph_canonicalize_scm(const char* id);
+```
+
+### How `pointer->scm` works
+
+Guile's `(system foreign)` wraps any `'*` return value in a pointer object.
+`pointer->scm` unsafely casts the pointer word to an SCM — which is exactly
+right here because the Rust function returned a `uintptr_t` that already
+encodes a valid SCM value built with `scm_cons`, `scm_from_utf8_string`, etc.
