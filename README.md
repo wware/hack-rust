@@ -16,7 +16,32 @@ This project is a Rust learning exercise covering:
 
 - Rust (1.70+) with `rustup`
 - Guile Scheme 3.0 — `brew install guile`
-- The Bohemia JSONL data files in `../ner-20260608/`
+- The Bohemia JSONL dataset (see below)
+
+## Data files
+
+This project reads JSONL files produced by the
+[ner-20260608](../ner-20260608) NER pipeline — a separate project that
+extracted a typed knowledge graph from "A Scandal in Bohemia" using Claude.
+Clone or copy that repo as a sibling directory so the relative path
+`../ner-20260608/` resolves correctly:
+
+```
+parent/
+  ner-20260608/          ← NER pipeline + generated JSONL files
+    bohemia_entities.jsonl
+    bohemia_events.jsonl
+    bohemia_moments.jsonl
+    bohemia_triplets.jsonl
+    ...
+  hack-rust/             ← this repo
+```
+
+Both `cargo run` and `guile query.scm` expect the files at that relative path.
+If your data lives elsewhere, edit the `base` path at the top of `src/main.rs`
+and `query.scm`.
+
+## Build instructions
 
 The Guile bottle from Homebrew on macOS is x86_64, so the shared library must
 be cross-compiled for that target even on Apple Silicon:
