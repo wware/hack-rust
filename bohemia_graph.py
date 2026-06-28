@@ -350,7 +350,8 @@ class BohemiaGraph:
         -------
         self — so you can chain: ``BohemiaGraph.find().load(...)``.
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         rc = self._lib.graph_load(
             self._handle,
             str(entities), str(events), str(moments), str(triplets),
@@ -366,7 +367,8 @@ class BohemiaGraph:
 
     def node_count(self) -> int:
         """Total number of nodes (entities + statements) in the graph."""
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         return self._lib.graph_node_count(self._handle)
 
     def get(self, node_id: str) -> Optional[dict]:
@@ -378,7 +380,8 @@ class BohemiaGraph:
         carry ``"node_kind": "statement"``.
         Wiki URLs are automatically canonicalised (``wiki:<slug>``).
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         raw = self._lib.graph_get(self._handle, node_id)
         return json.loads(raw) if raw is not None else None
 
@@ -390,7 +393,8 @@ class BohemiaGraph:
         Statements → ``"<subject> -[<predicate>]-> <object>"``.
         Returns ``None`` if the node is not found.
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         return self._lib.graph_describe(self._handle, node_id)
 
     def edges_from(
@@ -419,7 +423,8 @@ class BohemiaGraph:
         ``sentence_ids``, ``asserting_narrator_id``,
         ``extraction_confidence``.
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         raw = self._lib.graph_edges_from(self._handle, node_id, pred_type, truth)
         return json.loads(raw) if raw is not None else []
 
@@ -434,7 +439,8 @@ class BohemiaGraph:
 
         Parameters and return value are the same as :meth:`edges_from`.
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         raw = self._lib.graph_edges_to(self._handle, node_id, pred_type, truth)
         return json.loads(raw) if raw is not None else []
 
@@ -463,7 +469,8 @@ class BohemiaGraph:
         ``layers[n]`` the nodes first reached at hop *n*.  Each layer is a
         list of canonical ID strings (sorted).
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         seeds_json = json.dumps(seeds)
         truth_json = json.dumps(truth_values) if truth_values is not None else None
         raw = self._lib.graph_bfs(self._handle, seeds_json, max_hops, truth_json)
@@ -479,7 +486,8 @@ class BohemiaGraph:
         Returns a sorted list of reachable canonical IDs (not including
         *start* itself).
         """
-        assert self._handle is not None, "Graph has been closed"
+        if self._handle is None:
+            raise RuntimeError("Graph has been closed")
         raw = self._lib.graph_transitive_closure(self._handle, start, predicate)
         return json.loads(raw) if raw is not None else []
 
