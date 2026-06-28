@@ -1,13 +1,14 @@
 /// Raw bindings to the Guile 3.x C API.
 ///
-/// Only compiled for x86_64 because the Homebrew guile bottle is x86_64-only
-/// on Apple Silicon Macs.  The build.rs links libguile-3.0 for that target.
+/// Only compiled for x86_64 macOS because the Homebrew guile bottle is
+/// x86_64-only on Apple Silicon Macs.  The build.rs links libguile-3.0 for
+/// that target.
 ///
 /// SCM is `uintptr_t` in Guile's C headers (typedef via scm_t_bits).
 /// Immediate constants are computed from libguile/scm.h:
 ///   scm_tc8_flag = scm_tc3_imm24 + 0x00 = 4
 ///   SCM_MAKIFLAG_BITS(n) = (n << 8) + 4
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", target_os = "macos"))]
 pub mod guile {
     use std::os::raw::{c_char, c_int};
 

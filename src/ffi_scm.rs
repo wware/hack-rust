@@ -1,10 +1,12 @@
 /// Guile-native FFI layer: functions that return SCM values directly.
 ///
-/// These are only compiled for x86_64 (where libguile is available).
+/// These are only compiled for x86_64 macOS (where libguile is available via
+/// the Homebrew bottle).  Linux x86_64 and other targets skip this module to
+/// avoid unresolvable libguile symbols in the shared library.
 /// The Scheme side calls them via `(system foreign)` exactly like the JSON
 /// variants, but gets back real Scheme alists and lists instead of strings.
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", target_os = "macos"))]
 mod inner {
     use std::ffi::CStr;
     use std::os::raw::{c_char, c_int};
@@ -237,6 +239,6 @@ mod inner {
     }
 }
 
-// Re-export so the symbols are visible at crate top level for x86_64.
-#[cfg(target_arch = "x86_64")]
+// Re-export so the symbols are visible at crate top level for x86_64 macOS.
+#[cfg(all(target_arch = "x86_64", target_os = "macos"))]
 pub use inner::*;
