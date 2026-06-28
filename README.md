@@ -2,7 +2,7 @@
 
 A Rust graph engine over the [Bohemia NER dataset](https://github.com/graphwright/ner-20260608) — a typed
 knowledge graph extracted from "A Scandal in Bohemia" by Arthur Conan Doyle —
-with a Guile Scheme FFI interface.
+with Guile Scheme and Python FFI interfaces.
 
 This project is a Rust learning exercise covering:
 
@@ -14,11 +14,13 @@ This project is a Rust learning exercise covering:
 - Returning native Scheme values (strings, alists, lists) directly from Rust
   by calling the Guile C API (`scm_cons`, `scm_from_utf8_string`, …) and
   reinterpreting the result as SCM via `pointer->scm`
+- Calling the same `cdylib` from Python via `ctypes` (zero new dependencies)
 
 ## Prerequisites
 
 - Rust (1.70+) with `rustup`
-- Guile Scheme 3.0 — `brew install guile`
+- Guile Scheme 3.0 — `brew install guile` *(Guile demo only)*
+- Python 3.10+ *(Python demo only — stdlib `ctypes` only, no pip installs)*
 - The Bohemia JSONL dataset (see below)
 
 ## Data files
@@ -60,6 +62,8 @@ src/
   main.rs       — standalone CLI demo (cargo run)
 build.rs        — links libguile-3.0 when targeting x86_64-apple-darwin
 query.scm       — Guile Scheme demo using the native SCM API
+bohemia_graph.py — Python ctypes wrapper (no pip installs required)
+query.py        — Python demo mirroring query.scm
 ```
 
 ## Build
@@ -142,6 +146,50 @@ Scheme values — no JSON parsing required:
 (assq-ref (graph-node G "wiki:Irene_Adler") 'aliases)
 ;; ⇒ ("Irene Adler" "Mademoiselle Irene Adler" …)
 ```
+
+### Python demo
+
+The same `cdylib` is callable from Python with zero new dependencies — `ctypes`
+is part of the standard library.  The wrapper module `bohemia_graph.py`
+auto-discovers the built `.so` / `.dylib`.
+
+```sh
+# Build the release library (Linux / native arm64 macOS)
+cargo build --release
+
+python query.py
+```
+
+The wrapper exposes a `BohemiaGraph` class:
+
+```python
+from bohemia_graph import BohemiaGraph
+
+with BohemiaGraph.find() as g:
+    g.load("bohemia_entities.jsonl", "bohemia_events.jsonl",
+           "bohemia_moments.jsonl", "bohemia_triplets.jsonl")
+
+    # describe → plain string
+    print(g.describe("wiki:Sherlock_Holmes"))   # "Sherlock Holmes"
+
+    # edges_from → list of dicts (JSON-decoded StatementNode)
+    for edge in g.edges_from("wiki:Sherlock_Holmes"):
+        print(edge["predicate"], "->", edge["object_id"])
+
+    # bfs → list of layers (each a sorted list of canonical ID strings)
+    layers = g.bfs(["wiki:Sherlock_Holmes"], max_hops=2)
+    print(f"layer 1: {len(layers[1])} nodes")
+
+    # get → full node dict; node_kind == "entity" or "statement"
+    node = g.get("wiki:Irene_Adler")
+    print(node["aliases"])
+```
+
+The wrapper searches these paths for the library (in order):
+`target/release`, `target/x86_64-apple-darwin/release`,
+`target/aarch64-apple-darwin/release`, `target/debug`, `.`
+— first relative to `bohemia_graph.py` itself, then relative to the current
+working directory.  Pass `lib_path=` to `BohemiaGraph()` to override.
 
 ## Graph model
 
