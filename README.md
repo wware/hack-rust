@@ -15,6 +15,7 @@ This project is a Rust learning exercise covering:
   by calling the Guile C API (`scm_cons`, `scm_from_utf8_string`, …) and
   reinterpreting the result as SCM via `pointer->scm`
 - Calling the same `cdylib` from Python via `ctypes` (zero new dependencies)
+- Optional PyO3-based Python extension returning native Python objects
 
 ## Prerequisites
 
@@ -58,6 +59,7 @@ src/
   graph.rs      — in-memory graph with BFS / transitive closure / edge queries
   ffi.rs        — JSON-string FFI exports (char* return values)
   ffi_scm.rs    — native SCM FFI exports (Scm/usize return values, x86_64 only)
+  python.rs     — optional PyO3 module returning native Python objects
   guile_sys.rs  — extern "C" bindings to libguile + SCM immediate constants
   main.rs       — standalone CLI demo (cargo run)
 build.rs        — links libguile-3.0 when targeting x86_64-apple-darwin
@@ -151,7 +153,10 @@ Scheme values — no JSON parsing required:
 
 The same `cdylib` is callable from Python with zero new dependencies — `ctypes`
 is part of the standard library.  The wrapper module `bohemia_graph.py`
-auto-discovers the built `.so` / `.dylib`.
+auto-discovers the built `.so` / `.dylib`.  If the optional
+`bohemia_graph_native` extension is installed, the same import path switches to
+that backend automatically and avoids recurring JSON serialization for query
+results.
 
 ```sh
 # Build the release library (Linux / native arm64 macOS)
@@ -190,6 +195,24 @@ The wrapper searches these paths for the library (in order):
 `target/aarch64-apple-darwin/release`, `target/debug`, `.`
 — first relative to `bohemia_graph.py` itself, then relative to the current
 working directory.  Pass `lib_path=` to `BohemiaGraph()` to override.
+
+### Python-native extension (optional)
+
+The graph already lives as native Rust structs after `load(...)`; the remaining
+Python overhead is repeated JSON encoding/decoding on each query.  To remove
+that, build the optional PyO3 extension:
+
+```sh
+python -m pip install maturin
+maturin develop --features python-native
+python query.py
+```
+
+That installs a `bohemia_graph_native` module exposing the same `BohemiaGraph`
+API (`load`, `get`, `describe`, `edges_from`, `edges_to`, `bfs`,
+`transitive_closure`, context-manager support).  `query.py` keeps importing
+`bohemia_graph.py`, which prefers the native backend when available and falls
+back to the existing `ctypes`/JSON bridge otherwise.
 
 ## Graph model
 

@@ -3,4 +3,6 @@ pub mod ffi_scm;
 pub mod graph;
 pub mod guile_sys;
 pub mod loader;
+#[cfg(feature = "python-native")]
+pub mod python;
 pub mod types;

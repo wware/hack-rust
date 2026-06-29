@@ -211,7 +211,7 @@ fn edges_query(
         unsafe { CStr::from_ptr(truth) }
             .to_str()
             .ok()
-            .and_then(parse_truth_status)
+            .and_then(TruthStatus::parse)
     };
 
     let filter = EdgeFilter {
@@ -331,14 +331,3 @@ pub extern "C" fn graph_node_count(handle: *const OpaqueGraph) -> c_int {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-fn parse_truth_status(s: &str) -> Option<TruthStatus> {
-    match s {
-        "asserted_true" => Some(TruthStatus::AssertedTrue),
-        "asserted_false" => Some(TruthStatus::AssertedFalse),
-        "hypothetical" => Some(TruthStatus::Hypothetical),
-        "disputed" => Some(TruthStatus::Disputed),
-        "retracted" => Some(TruthStatus::Retracted),
-        _ => None,
-    }
-}

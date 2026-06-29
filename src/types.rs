@@ -24,6 +24,17 @@ impl TruthStatus {
             TruthStatus::Retracted => "retracted",
         }
     }
+
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "asserted_true" => Some(TruthStatus::AssertedTrue),
+            "asserted_false" => Some(TruthStatus::AssertedFalse),
+            "hypothetical" => Some(TruthStatus::Hypothetical),
+            "disputed" => Some(TruthStatus::Disputed),
+            "retracted" => Some(TruthStatus::Retracted),
+            _ => None,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
