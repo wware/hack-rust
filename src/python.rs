@@ -232,7 +232,7 @@ impl PyBohemiaGraph {
 }
 
 #[pymodule(name = "_bohemia_graph_native")]
-fn bohemia_graph_native(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _bohemia_graph_native(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyBohemiaGraph>()?;
     Ok(())
 }
