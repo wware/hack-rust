@@ -108,7 +108,8 @@ fn sorted_layers(layers: Vec<std::collections::HashSet<String>>) -> Vec<Vec<Stri
 impl PyBohemiaGraph {
     #[new]
     #[pyo3(signature = (lib_path=None))]
-    fn new(_lib_path: Option<&str>) -> Self {
+    fn new(lib_path: Option<&str>) -> Self {
+        let _ = lib_path;
         Self {
             graph: Some(Graph::new(vec![])),
         }
@@ -230,7 +231,7 @@ impl PyBohemiaGraph {
     }
 }
 
-#[pymodule(name = "bohemia_graph_native")]
+#[pymodule(name = "_bohemia_graph_native")]
 fn bohemia_graph_native(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyBohemiaGraph>()?;
     Ok(())

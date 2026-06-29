@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "bohemia-graph-native"
+version = "0.1.0"
+description = "Python-native bindings for the bohemia_graph Rust graph engine"
+requires-python = ">=3.10"
+
+[tool.maturin]
+features = ["python-native"]
+module-name = "bohemia_graph_native._bohemia_graph_native"
+python-source = "python"
