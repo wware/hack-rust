@@ -1,9 +1,9 @@
 """
 Python ctypes wrapper for the bohemia_graph shared library.
 
-Loads ``libbohemia_graph.so`` / ``libbohemia_graph.dylib`` and exposes the C
-ABI (``ffi.rs``) as a Pythonic ``BohemiaGraph`` class — no compilation step
-beyond the normal Rust build, no new dependencies.
+Prefers the optional ``bohemia_graph_native`` PyO3 extension when installed.
+Otherwise it loads ``libbohemia_graph.so`` / ``libbohemia_graph.dylib`` and
+exposes the C ABI (``ffi.rs``) as a Pythonic ``BohemiaGraph`` class.
 
 Quick start
 -----------
@@ -38,6 +38,11 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional, Union
+
+try:
+    from bohemia_graph_native import BohemiaGraph as _NativeBohemiaGraph
+except ImportError:
+    _NativeBohemiaGraph = None
 
 # ---------------------------------------------------------------------------
 # Library discovery
@@ -505,3 +510,7 @@ class BohemiaGraph:
                 ...
         """
         return cls(lib_path)
+
+
+if _NativeBohemiaGraph is not None:
+    BohemiaGraph = _NativeBohemiaGraph

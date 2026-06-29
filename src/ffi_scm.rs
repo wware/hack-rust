@@ -63,14 +63,7 @@ mod inner {
         unsafe { CStr::from_ptr(p) }
             .to_str()
             .ok()
-            .and_then(|s| match s {
-                "asserted_true"  => Some(TruthStatus::AssertedTrue),
-                "asserted_false" => Some(TruthStatus::AssertedFalse),
-                "hypothetical"   => Some(TruthStatus::Hypothetical),
-                "disputed"       => Some(TruthStatus::Disputed),
-                "retracted"      => Some(TruthStatus::Retracted),
-                _ => None,
-            })
+            .and_then(TruthStatus::parse)
     }
 
     fn c_str<'a>(p: *const c_char) -> Option<&'a str> {
