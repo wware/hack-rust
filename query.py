@@ -48,8 +48,8 @@ with BohemiaGraph.find() as g:
     print()
 
     # -- edges_to with predicate filter ------------------------------------
-    print("--- edges INTO Holmes (predicate='Investigates') ---")
-    for edge in g.edges_to(HOLMES, pred_type="Investigates"):
+    print("--- edges INTO Holmes (predicate='Involves') ---")
+    for edge in g.edges_to(HOLMES, pred_type="Involves"):
         print(f"  {edge['subject_id']} -[{edge['predicate']}]-> {edge['object_id']}")
     print()
 
@@ -65,8 +65,8 @@ with BohemiaGraph.find() as g:
     print()
 
     # -- transitive_closure ------------------------------------------------
-    print("--- transitive closure via 'LocatedIn' from Baker Street ---")
-    reachable = g.transitive_closure("place:baker_street", "LocatedIn")
+    print("--- transitive closure via 'LocatedIn' from Egria ---")
+    reachable = g.transitive_closure("wiki:Egria", "LocatedIn")
     if reachable:
         for node_id in reachable:
             print(f"  {node_id}")
