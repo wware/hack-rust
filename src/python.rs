@@ -8,7 +8,7 @@ use crate::graph::Graph;
 use crate::loader::load_graph_data;
 use crate::types::{EdgeFilter, EntityNode, Node, StatementNode, TruthStatus};
 
-#[pyclass(name = "BohemiaGraph")]
+#[pyclass(module = "bohemia_graph_native", name = "BohemiaGraph")]
 pub struct PyBohemiaGraph {
     graph: Option<Graph>,
 }
