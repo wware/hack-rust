@@ -181,3 +181,38 @@ pub struct EdgeFilter {
     pub pred_type: Option<String>,
     pub truth: Option<TruthStatus>,
 }
+
+// ---------------------------------------------------------------------------
+// Compile-time embedded record types (used by build.rs → data.rs)
+// ---------------------------------------------------------------------------
+
+pub struct StaticEntityRecord {
+    pub entity_id: &'static str,
+    pub canonical: &'static str,
+    pub aliases:   &'static [&'static str],
+    pub kind:      &'static str,
+    pub wiki_url:  Option<&'static str>,
+}
+
+pub struct StaticEventRecord {
+    pub id:          &'static str,
+    pub description: &'static str,
+}
+
+pub struct StaticMomentRecord {
+    pub id:    &'static str,
+    pub label: &'static str,
+}
+
+pub struct StaticTripletRecord {
+    pub id:                    &'static str,
+    pub predicate:             &'static str,
+    pub subject_id:            &'static str,
+    pub object_id:             &'static str,
+    pub truth_status:          TruthStatus,
+    pub story_id:              &'static str,
+    pub paragraph_index:       u32,
+    pub sentence_ids:          &'static [u32],
+    pub asserting_narrator_id: Option<&'static str>,
+    pub extraction_confidence: f64,
+}

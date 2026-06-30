@@ -9,7 +9,6 @@
 
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
-use std::path::Path;
 
 use crate::graph::Graph;
 use crate::loader::load_graph_data;
@@ -45,49 +44,18 @@ pub extern "C" fn graph_load(
     if handle.is_null() {
         return -1;
     }
-    let to_path = |p: *const c_char| -> Option<String> {
-        if p.is_null() {
-            None
-        } else {
-            unsafe { CStr::from_ptr(p) }
-                .to_str()
-                .ok()
-                .map(|s| s.to_string())
-        }
-    };
-    let (Some(ep), Some(evp), Some(mp), Some(tp)) = (
-        to_path(entities),
-        to_path(events),
-        to_path(moments),
-        to_path(triplets),
-    ) else {
-        eprintln!("[ffi] graph_load: null path argument");
-        return -1;
-    };
-
     let cutoff = if sentence_cutoff < 0 {
         None
     } else {
         Some(sentence_cutoff as u32)
     };
-
-    match load_graph_data(
-        Path::new(&ep),
-        Path::new(&evp),
-        Path::new(&mp),
-        Path::new(&tp),
-        cutoff,
-    ) {
-        Ok(data) => {
-            let g = Graph::new(data.nodes);
-            unsafe { (*handle).0 = g };
-            0
-        }
-        Err(e) => {
-            eprintln!("[ffi] graph_load error: {e}");
-            -1
-        }
-    }
+    // Path arguments are accepted for API compatibility but ignored;
+    // data is embedded at compile time via build.rs codegen.
+    let _ = (entities, events, moments, triplets);
+    let data = load_graph_data(cutoff);
+    let g = Graph::new(data.nodes);
+    unsafe { (*handle).0 = g };
+    0
 }
 
 /// Free a graph allocated by graph_new().

@@ -1,18 +1,9 @@
-use std::path::Path;
-
 use bohemia_graph::graph::Graph;
 use bohemia_graph::loader::load_graph_data;
 use bohemia_graph::types::EdgeFilter;
 
 fn main() {
-    let data = load_graph_data(
-        Path::new("bohemia_entities.jsonl"),
-        Path::new("bohemia_events.jsonl"),
-        Path::new("bohemia_moments.jsonl"),
-        Path::new("bohemia_triplets.jsonl"),
-        None,
-    )
-    .expect("failed to load data");
+    let data = load_graph_data(None);
 
     let graph = Graph::new(data.nodes);
 

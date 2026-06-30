@@ -7,6 +7,8 @@ with Guile Scheme and Python FFI interfaces.
 This project is a Rust learning exercise covering:
 
 - Struct/enum definitions and `serde` deserialization from JSONL
+- `build.rs` code generation: JSONL files parsed at compile time and emitted
+  as Rust `static` arrays (`&'static str`, `&'static [u32]`) baked into the binary
 - HashMap-indexed in-memory graph (no reference cycles — edges store IDs)
 - BFS, transitive closure, and filtered edge queries
 - `cdylib` shared library with C-ABI exports (`extern "C"`, `#[no_mangle]`)
@@ -22,12 +24,11 @@ This project is a Rust learning exercise covering:
 - Rust (1.70+) with `rustup`
 - Guile Scheme 3.0 — `brew install guile` *(Guile demo only)*
 - Python 3.10+ *(Python demo only — stdlib `ctypes` only, no pip installs)*
-- The Bohemia JSONL dataset (see below)
 
 ## Data files
 
 The four JSONL files are bundled in this repo (source:
-[wware/ner-20260608](https://github.com/graphwright/ner-20260608)):
+[graphwright/ner-20260608](https://github.com/graphwright/ner-20260608)):
 
 ```
 bohemia_entities.jsonl   — canonical entities with wiki links and aliases
@@ -36,9 +37,10 @@ bohemia_moments.jsonl    — temporal anchors tied to events
 bohemia_triplets.jsonl   — typed, directed statements (the graph edges)
 ```
 
-`cargo run` looks for them in the current working directory (the repo root).
-`guile query.scm` resolves them relative to the script's own directory, so it
-works regardless of where you invoke it from.
+`build.rs` reads these files at compile time, parses them with `serde_json`,
+and emits a generated `bohemia_data.rs` containing four `pub static` arrays of
+structs with `&'static str` / `&'static [u32]` fields.  The data is baked into
+the binary as read-only static storage — no runtime file I/O occurs.
 
 ## Build instructions
 
@@ -55,14 +57,17 @@ rustup target add x86_64-apple-darwin
 src/
   lib.rs        — crate root; re-exports all modules
   types.rs      — enums and structs (TruthStatus, EntityKind, Node, …)
-  loader.rs     — JSONL → Vec<Node> via serde_json
+                  + Static*Record types used by generated data
+  data.rs       — include!s the build-generated bohemia_data.rs
+  loader.rs     — converts static arrays → Vec<Node> (no file I/O)
   graph.rs      — in-memory graph with BFS / transitive closure / edge queries
   ffi.rs        — JSON-string FFI exports (char* return values)
   ffi_scm.rs    — native SCM FFI exports (Scm/usize return values, x86_64 only)
   python.rs     — optional PyO3 module returning native Python objects
   guile_sys.rs  — extern "C" bindings to libguile + SCM immediate constants
   main.rs       — standalone CLI demo (cargo run)
-build.rs        — links libguile-3.0 when targeting x86_64-apple-darwin
+build.rs        — codegen: parses JSONL → static Rust arrays;
+                  also links libguile-3.0 when targeting x86_64-apple-darwin
 query.scm       — Guile Scheme demo using the native SCM API
 bohemia_graph.py — Python ctypes wrapper (no pip installs required)
 query.py        — Python demo mirroring query.scm
@@ -246,6 +251,10 @@ int          graph_load(OpaqueGraph*, const char* entities, const char* events,
 void         graph_destroy(OpaqueGraph*);
 int          graph_node_count(const OpaqueGraph*);
 ```
+
+> **Note:** the path arguments to `graph_load` are accepted for API
+> compatibility but are ignored — data is embedded at compile time.
+> Only `sentence_cutoff` has effect.
 
 ### JSON family (`ffi.rs`) — return `char*`
 

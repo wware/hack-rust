@@ -1,3 +1,4 @@
+pub mod data;
 pub mod ffi;
 pub mod ffi_scm;
 pub mod graph;
